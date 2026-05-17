@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>admin- Biabu Floral Art</title>
+<style>
+body{font-family:Arial;background:#f5f5f5;padding:20px;}
+.container{max-width:800px;margin:0 auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.1);}
+h1{color:#8B0000;margin-bottom:20px;}
+h3{margin-top:25px;color:#333;}
+input,textarea,button{width:100%;padding:12px;margin:10px 0;border:1px solid #ddd;border-radius:8px;font-size:1rem;}
+button{background:#8B0000;color:#fff;border:none;font-weight:700;cursor:pointer;}
+button:hover{background:#6B0000;}
+button:disabled{background:#999;cursor:not-allowed;}
+.item{background:#f9f9f9;padding:15px;border-radius:8px;margin:10px 0;display:flex;gap:15px;align-items:center;}
+.item img{width:80px;height:80px;object-fit:cover;border-radius:8px;}
+.preview{max-width:200px;margin:10px 0;border-radius:8px;}
+.delete{background:#dc3545;}
+.delete:hover{background:#c82333;}
+hr{margin:30px 0;border:none;border-top:1px solid #ddd;}
+.info{background:#e7f3ff;padding:15px;border-radius:8px;margin-bottom:20px;border-left:4px solid #2196F3;}
+label{display:block;margin-top:15px;font-weight:600;color:#555;}
+small{color:#777;font-size:0.85rem;}
+.loading{display:none;color:#8B0000;font-weight:600;margin:5px 0;}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚙️ Admin Panel - Biabu Floral Art</h1>
+
+  <div class="info">
+    <strong>💡 Tip:</strong> Picha zinapakia cloud. Ukishahifadhi, kila mtu ataiona.
+  </div>
+
+  <h3>Mipangilio ya Biashara</h3>
+  <label>Logo ya Biashara:</label>
+  <input type="file" id="logoUpload" accept="image/*">
+  <p class="loading" id="logoLoading">Inapakia logo...</p>
+  <img id="logoPreview" class="preview">
+
+  <label>Jina la Biashara:</label>
+  <input type="text" id="bizName" value="Biabu Floral Art">
+  <label>Namba ya Simu:</label>
+  <input type="text" id="phone" placeholder="0775667472">
+  <label>Link ya WhatsApp:</label>
+  <input type="text" id="whatsappLink" placeholder="https://wa.me/255775667472">
+  <label>Mahali Mnapatikana:</label>
+  <input type="text" id="location" value="Morogoro. Kwa sasa">
+  <button onclick="saveSettings()">Hifadhi Mipangilio</button>
+
+  <hr>
+
+  <h3>Ongeza Picha Mpya</h3>
+  <label>Chagua Picha:</label>
+  <input type="file" id="imgUpload" accept="image/*">
+  <p class="loading" id="imgLoading">Inapakia picha... subiri kidogo</p>
+  <img id="imgPreview" class="preview">
+
+  <label>Jina la Piko/Design:</label>
+  <input type="text" id="title" placeholder="Piko ya Kiarabu">
+  <label>Maelezo:</label>
+  <textarea id="desc" placeholder="Maelezo mafupi" rows="3"></textarea>
+  <label>Bei:</label>
+  <input type="text" id="price" placeholder="45,000">
+  <button id="addBtn" onclick="addItem()">Ongeza Kwenye Gallery</button>
+
+  <h3>Picha Zilizopo</h3>
+  <div id="itemsList"></div>
+</div>
+
+<script>
+const CLOUD_NAME = "duev05m8b";
+const UPLOAD_PRESET = "Biabu_unsigne d";
+
+let data = JSON.parse(localStorage.getItem('biabuData')) || {
+  logo:'', name:'Biabu Floral Art', phone:'', whatsappLink:'',
+  location:'Morogoro. Kwa sasa', items:[]
+};
+
+let uploadedImgUrl = '';
+
+document.getElementById('logoUpload').onchange = async e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('logoLoading').style.display = 'block';
+  const url = await uploadToCloudinary(file);
+  document.getElementById('logoLoading').style.display = 'none';
+  if(url){ document.getElementById('logoPreview').src = url; data.logo = url; }
+};
+
+document.getElementById('imgUpload').onchange = async e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('imgLoading').style.display = 'block';
+  document.getElementById('addBtn').disabled = true;
+  uploadedImgUrl = await uploadToCloudinary(file);
+  document.getElementById('imgLoading').style.display = 'none';
+  document.getElementById('addBtn').disabled = false;
+  if(uploadedImgUrl){ document.getElementById('imgPreview').src = uploadedImgUrl; }
+};
+
+async function uploadToCloudinary(file){
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  try{
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{
+      method:'POST', body:formData
+    });
+    const data = await res.json();
+    return data.secure_url;
+  }catch(err){
+    alert('Shida kupakia picha. Angalia internet ujaribu tena.');
+    return null;
+  }
+}
+
+function saveSettings(){
+  data.name = document.getElementById('bizName').value;
+  data.phone = document.getElementById('phone').value;
+  data.whatsappLink = document.getElementById('whatsappLink').value;
+  data.location = document.getElementById('location').value;
+  localStorage.setItem('biabuData',JSON.stringify(data));
+  alert('Mipangilio imehifadhiwa!');
+}
+
+function addItem(){
+  if(!uploadedImgUrl){alert('Subiri picha ipakie kwanza');return;}
+  const item = {
+    img: uploadedImgUrl,
+    title: document.getElementById('title').value,
+    desc: document.getElementById('desc').value,
+    price: document.getElementById('price').value
+  };
+  if(!item.title){alert('Weka jina');return;}
+  data.items.push(item);
+  localStorage.setItem('biabuData',JSON.stringify(data));
+  loadItems();
+  document.getElementById('title').value='';
+  document.getElementById('desc').value='';
+  document.getElementById('price').value='';
+  document.getElementById('imgPreview').src='';
+  uploadedImgUrl = '';
+  alert('Picha imeongezwa! Kila mtu ataiona sasa.');
+}
+
+function deleteItem(index){
+  if(confirm('Una uhakika unataka kufuta?')){
+    data.items.splice(index,1);
+    localStorage.setItem('biabuData',JSON.stringify(data));
+    loadItems();
+  }
+}
+
+function loadItems(){
+  const list = document.getElementById('itemsList');
+  list.innerHTML='';
+  if(data.items.length === 0){
+    list.innerHTML = '<p style="color:#999;">Bado hakuna picha</p>';
+    return;
+  }
+  data.items.forEach((item,i)=>{
+    list.innerHTML += `
+      <div class="item">
+        <img src="${item.img}">
+        <div style="flex:1;">
+          <strong>${item.title}</strong><br>
+          <small>${item.desc}</small><br>
+          <strong style="color:#8B0000;">Tsh ${item.price}</strong>
+        </div>
+        <button class="delete" onclick="deleteItem(${i})">Futa</button>
+      </div>
+    `;
+  });
+}
+
+document.getElementById('bizName').value = data.name;
+document.getElementById('phone').value = data.phone;
+document.getElementById('whatsappLink').value = data.whatsappLink;
+document.getElementById('location').value = data.location;
+document.getElementById('logoPreview').src = data.logo;
+loadItems();
+</script>
+</div>
+</body>
+</html>
